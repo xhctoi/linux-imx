@@ -59,6 +59,17 @@
 			enable-active-high;
 		};
 
+		reg_usb_vmmc: regulator@2 {
+			compatible = "regulator-fixed";
+			regulator-name = "vbus_otg";
+			pinctrl-0 = <&pinctrl_usb_otg1>;
+			regulator-min-microvolt = <5000000>;
+			regulator-max-microvolt = <5000000>;
+			gpio = <&gpio1 2 GPIO_ACTIVE_HIGH>;
+			enable-active-high;
+		};
+
+
 		reg_gpio_dvfs: regulator-gpio {
 			compatible = "regulator-gpio";
 			pinctrl-names = "default";
@@ -87,7 +98,7 @@
 		 * hp-det-polarity = 0: hp detect high for headphone
 		 * hp-det-polarity = 1: hp detect high for speaker
 		 */
-		hp-det = <3 0>;
+		hp-det = <3 1>;
 		hp-det-gpios = <&gpio5 4 0>;
 		audio-routing =
 			"Headset Jack", "HP_L",
@@ -107,6 +118,14 @@
 			"ASRC-Capture", "CPU-Capture",
 			"CPU-Capture", "Capture";
 	};
+
+	sound-spdif {
+	    compatible = "fsl,imx-audio-spdif";
+	    model = "imx-spdif";
+	    spdif-controller = <&spdif>;
+	    spdif-out;
+	};
+
 
 	spi4 {
 		compatible = "spi-gpio";
@@ -263,6 +282,13 @@
 	status = "okay";
 };
 
+&spdif {
+    pinctrl-names = "default";
+    pinctrl-0 = <&pinctrl_spdif>;
+    status = "okay";
+};
+
+
 &sim2 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_sim2_1>;
@@ -279,28 +305,29 @@
 	status = "okay";
 };
 
-&tsc {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_tsc>;
-	status = "okay";
-	xnur-gpio = <&gpio1 3 0>;
-	measure_delay_time = <0xffff>;
-	pre_charge_time = <0xfff>;
-};
-
 &uart1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart1>;
 	status = "okay";
 };
 
+
 &uart2 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart2>;
-	fsl,uart-has-rtscts;
-	/* for DTE mode, add below change */
-	/* fsl,dte-mode; */
-	/* pinctrl-0 = <&pinctrl_uart2dte>; */
+	status = "okay";
+};
+
+
+&uart3 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart3>;
+	status = "okay";
+};
+
+&uart4 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart4>;
 	status = "okay";
 };
 
@@ -311,15 +338,14 @@
 
 &usbotg2 {
 	dr_mode = "host";
+	vbus-supply=<&reg_usb_vmmc>;
 	disable-over-current;
 	status = "okay";
 };
 
 &usdhc1 {
-	pinctrl-names = "default", "state_100mhz", "state_200mhz";
+	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_usdhc1>;
-	pinctrl-1 = <&pinctrl_usdhc1_100mhz>;
-	pinctrl-2 = <&pinctrl_usdhc1_200mhz>;
 	cd-gpios = <&gpio1 19 0>;
 	keep-power-in-suspend;
 	enable-sdio-wakeup;
@@ -334,29 +360,10 @@
 	non-removable;
 	keep-power-in-suspend;
 	enable-sdio-wakeup;
+	bus-width = <8>;
 	status = "okay";
 };
 
-&i2c1 {
-	clock-frequency = <100000>;
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_i2c1>;
-	status = "okay";
-
-	mag3110@0e {
-		compatible = "fsl,mag3110";
-		reg = <0x0e>;
-		position = <2>;
-	};
-
-	fxls8471@1e {
-		compatible = "fsl,fxls8471";
-		reg = <0x1e>;
-		position = <0>;
-		interrupt-parent = <&gpio5>;
-		interrupts = <0 8>;
-	};
-};
 
 &i2c2 {
 	clock_frequency = <100000>;
@@ -371,6 +378,20 @@
 		clock-names = "mclk";
 		wlf,shared-lrclk;
 	};
+
+	sii902x: sii902x@39 {
+	     compatible = "SiI,sii902x";
+	     pinctrl-names = "default";
+	     pinctrl-0 = <&pinctrl_sii902x>;
+	     interrupt-parent = <&gpio1>;
+	     interrupts = <18 IRQ_TYPE_EDGE_FALLING>;
+	     mode_str ="1280x720M@60";
+	     bits-per-pixel = <16>;
+	     rst-gpio = <&gpio_spi 0 0>;
+	     reg = <0x39>;
+	     status = "okay";
+	 };
+
 
 	ov5640: ov5640@3c {
 		compatible = "ovti,ov5640";
@@ -420,6 +441,24 @@
 				MX6UL_PAD_GPIO1_IO05__USDHC1_VSELECT	0x17059 /* SD1 VSELECT */
 				MX6UL_PAD_GPIO1_IO09__GPIO1_IO09        0x17059 /* SD1 RESET */
 				MX6UL_PAD_SNVS_TAMPER0__GPIO5_IO00	0x80000000
+			>;
+		};
+
+		pinctrl_usb_otg1: usbotg1grp {
+			fsl,pins = <
+				MX6UL_PAD_GPIO1_IO02__GPIO1_IO02	0x17059
+			  >;
+		};
+
+		pinctrl_sii902x: hdmigrp-1 {
+			fsl,pins = <
+				MX6UL_PAD_UART1_CTS_B__GPIO1_IO18	0x17059
+			 >;
+		 };
+
+		pinctrl_spdif: spdifgrp {
+			fsl,pins = <
+				MX6UL_PAD_JTAG_MOD__SPDIF_OUT	    	0x1b0b0
 			>;
 		};
 
@@ -550,19 +589,24 @@
 			fsl,pins = <
 				MX6UL_PAD_UART2_TX_DATA__UART2_DCE_TX	0x1b0b1
 				MX6UL_PAD_UART2_RX_DATA__UART2_DCE_RX	0x1b0b1
-				MX6UL_PAD_UART3_RX_DATA__UART2_DCE_RTS	0x1b0b1
-				MX6UL_PAD_UART3_TX_DATA__UART2_DCE_CTS	0x1b0b1
 			>;
 		};
 
-		pinctrl_uart2dte: uart2dtegrp {
+		pinctrl_uart3: uart3grp {
 			fsl,pins = <
-				MX6UL_PAD_UART2_TX_DATA__UART2_DTE_RX	0x1b0b1
-				MX6UL_PAD_UART2_RX_DATA__UART2_DTE_TX	0x1b0b1
-				MX6UL_PAD_UART3_RX_DATA__UART2_DTE_CTS	0x1b0b1
-				MX6UL_PAD_UART3_TX_DATA__UART2_DTE_RTS	0x1b0b1
+				MX6UL_PAD_UART3_TX_DATA__UART3_DCE_TX 0x1b0b1
+				MX6UL_PAD_UART3_RX_DATA__UART3_DCE_RX 0x1b0b1
 			>;
 		};
+		
+		pinctrl_uart4: uart4grp {
+			fsl,pins = <
+				MX6UL_PAD_UART4_TX_DATA__UART4_DCE_TX 0x1b0b1
+				MX6UL_PAD_UART4_RX_DATA__UART4_DCE_RX 0x1b0b1
+			>;
+		};
+
+
 
 		pinctrl_usdhc1: usdhc1grp {
 			fsl,pins = <
@@ -608,21 +652,6 @@
 			>;
 		};
 
-		pinctrl_tsc: tscgrp {
-			fsl,pins = <
-				MX6UL_PAD_GPIO1_IO01__GPIO1_IO01	0xb0
-				MX6UL_PAD_GPIO1_IO02__GPIO1_IO02	0xb0
-				MX6UL_PAD_GPIO1_IO03__GPIO1_IO03	0xb0
-				MX6UL_PAD_GPIO1_IO04__GPIO1_IO04	0xb0
-			>;
-		};
-
-		pinctrl_i2c1: i2c1grp {
-			fsl,pins = <
-				MX6UL_PAD_UART4_TX_DATA__I2C1_SCL 0x4001b8b0
-				MX6UL_PAD_UART4_RX_DATA__I2C1_SDA 0x4001b8b0
-			>;
-		};
 
 		pinctrl_i2c2: i2c2grp {
 			fsl,pins = <
